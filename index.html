@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Noshtek app hosting calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#13294B; --text:#1D2939; --muted:#5B6576; --line:#D8DEE8; --panel:#F3F6FA; --card:#FFFFFF; --bg:#FFFFFF;
+  --good:#0F7B5F; --good-soft:#E3F4EE; --warn:#B45309; --warn-soft:#FDF1E3; --bad:#B42318; --bad-soft:#FDECEA; --accent:#2457C5;
+  --radius-lg:14px; --radius-sm:8px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#C9D7F2; --text:#E4E8EF; --muted:#9AA4B5; --line:#2C3547; --panel:#161C27; --card:#1B2230; --bg:#10151E;
+    --good:#4FC49E; --good-soft:#15332B; --warn:#F2A65A; --warn-soft:#3A2A17; --bad:#F2776B; --bad-soft:#3A1D1B; --accent:#7EA6F5;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#C9D7F2; --text:#E4E8EF; --muted:#9AA4B5; --line:#2C3547; --panel:#161C27; --card:#1B2230; --bg:#10151E;
+  --good:#4FC49E; --good-soft:#15332B; --warn:#F2A65A; --warn-soft:#3A2A17; --bad:#F2776B; --bad-soft:#3A1D1B; --accent:#7EA6F5;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1280px;margin:0 auto;padding:28px 20px 60px}
+header h1{font-size:30px;line-height:1.15;margin:0 0 6px;color:var(--ink);font-weight:700;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:72ch}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:24px;margin-top:22px;align-items:start}
+@media (max-width:1040px){.layout{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border-radius:var(--radius-lg);padding:18px}
+.summary{position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px)}
+@media (max-width:1040px){.summary{position:static}}
+h2{font-size:18px;margin:0 0 12px;color:var(--ink)}
+h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+.platform{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+label.f input,label.f select{font:inherit;font-size:14px;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px 9px;min-width:0}
+label.c{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--text)}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.apps{display:flex;flex-direction:column;gap:16px;margin-top:16px}
+.app{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px}
+.apphead{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.apphead input.name{flex:1;font:inherit;font-size:17px;font-weight:600;color:var(--ink);border:0;border-bottom:1px dashed var(--line);background:transparent;padding:4px 2px;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 12px}
+.group{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+details.group>summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);list-style:none}
+details.group>summary::-webkit-details-marker{display:none}
+details.group>summary::before{content:"+ ";color:var(--accent)}
+details.group[open]>summary::before{content:"− "}
+details.group[open]>summary{margin-bottom:10px}
+.btn{font:inherit;font-size:14px;font-weight:600;border-radius:var(--radius-sm);padding:8px 12px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--text)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--bad)}
+.addrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.total{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.total .big{font-size:34px;font-weight:700;color:var(--ink);letter-spacing:-0.01em}
+.total .sub{color:var(--muted);font-size:13px}
+.rowline{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:3px 0;color:var(--muted)}
+.rowline b{color:var(--text);font-weight:600}
+.appsum{background:var(--card);border-radius:var(--radius-sm);padding:12px;margin-top:10px;border:1px solid var(--line)}
+.appsum .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.appsum .nm{font-weight:600;color:var(--ink)}
+.appsum .cost{font-weight:700;font-size:18px}
+.meter{position:relative;height:10px;border-radius:5px;background:var(--line);margin:8px 0 6px;overflow:hidden}
+.meter span{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:20px}
+.tag.good{background:var(--good-soft);color:var(--good)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.bad{background:var(--bad-soft);color:var(--bad)}
+.small{font-size:12.5px;color:var(--muted)}
+.brk{margin-top:6px}
+.brk summary{cursor:pointer;font-size:12.5px;color:var(--accent)}
+.brk table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12.5px}
+.brk td{padding:3px 0;border-bottom:1px solid var(--line)}
+.brk td:last-child{text-align:right;white-space:nowrap}
+.sources{margin-top:28px}
+.tablewrap{overflow-x:auto}
+.sources table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px}
+.sources th,.sources td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.sources th{color:var(--muted);font-weight:600}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px}
+@media (prefers-reduced-motion:no-preference){.meter span{transition:width .25s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>What will each app cost to host?</h1>
+  <p>Describe each app below. The calculator uses AWS Mumbai prices checked on 27 September 2026 and shows each app's monthly cost against the client plan it fits.</p>
+</header>
+
+<div class="layout">
+  <main>
+    <section class="panel" aria-labelledby="plat">
+      <h2 id="plat">Shared platform settings</h2>
+      <div class="platform">
+        <label class="f">Rupees per US dollar<input id="usdInr" type="number" step="0.01" min="1"></label>
+        <label class="f">Security &amp; monitoring baseline (USD/month)<input id="baseline" type="number" step="0.5" min="0"></label>
+        <label class="c"><input id="legacyCognito" type="checkbox"> Login pools created before 22 Nov 2024 (50,000 free users)</label>
+        <label class="c"><input id="gst" type="checkbox"> Show amounts with 18% GST</label>
+        <label class="c"><input id="nat" type="checkbox"> Always-on servers use a private network (adds a NAT gateway)</label>
+        <label class="f">NAT data per month (GB)<input id="natGb" type="number" step="1" min="0"></label>
+      </div>
+      <p class="note">Apps choosing “shared database” split one database server (db.t4g.small, 50 GB). The baseline covers audit logs, threat detection, alarms and DNS for the whole account.</p>
+    </section>
+
+    <div id="apps" class="apps"></div>
+    <div class="addrow">
+      <button class="btn primary" data-preset="small" type="button">Add a small app</button>
+      <button class="btn" data-preset="owndb" type="button">Add an app with its own database</button>
+      <button class="btn" data-preset="container" type="button">Add an always-on server app</button>
+      <button class="btn" id="reset" type="button">Reset to examples</button>
+    </div>
+
+    <section class="sources" aria-labelledby="src">
+      <h2 id="src">Prices used (AWS Mumbai unless noted, checked 27 Sept 2026)</h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Item</th><th>Price</th><th>Source page</th></tr></thead>
+        <tbody>
+          <tr><td>Database server (RDS PostgreSQL)</td><td>t4g.micro $0.021/h, small $0.042/h, medium $0.084/h; standby (Multi-AZ) doubles it; storage $0.131/GB-month</td><td>aws.amazon.com/rds/postgresql/pricing</td></tr>
+          <tr><td>API calls (API Gateway HTTP API)</td><td>$1.05 per million</td><td>aws.amazon.com/api-gateway/pricing</td></tr>
+          <tr><td>Functions (Lambda)</td><td>$0.20 per million requests; $0.0000166667/GB-s (Arm $0.0000133334); 1M requests + 400,000 GB-s free per month</td><td>aws.amazon.com/lambda/pricing</td></tr>
+          <tr><td>Login (Cognito Lite)</td><td>10,000 users free (50,000 for older pools), then $0.0055 per user; $0.0046 above 100,000</td><td>aws.amazon.com/cognito/pricing</td></tr>
+          <tr><td>Always-on servers (Fargate)</td><td>x86 $0.04256 per vCPU-h + $0.004655 per GB-h; Arm $0.02383 + $0.00261</td><td>aws.amazon.com/fargate/pricing</td></tr>
+          <tr><td>Load balancer (ALB)</td><td>$0.0239/h + $0.008 per LCU-h; 2 public IPv4 at $0.005/h each</td><td>aws.amazon.com/elasticloadbalancing/pricing; aws.amazon.com/vpc/pricing</td></tr>
+          <tr><td>NAT gateway</td><td>$0.056/h + $0.056/GB</td><td>aws.amazon.com/vpc/pricing</td></tr>
+          <tr><td>File storage (S3 Standard)</td><td>$0.025/GB-month</td><td>aws.amazon.com/s3/pricing</td></tr>
+          <tr><td>Delivery to users in India (CloudFront)</td><td>First 1 TB free per month, then $0.109/GB</td><td>aws.amazon.com/cloudfront/pricing/pay-as-you-go</td></tr>
+          <tr><td>Email (SES)</td><td>$0.10 per 1,000</td><td>aws.amazon.com/ses/pricing</td></tr>
+          <tr><td>Logs (CloudWatch)</td><td>$0.67/GB after 5 GB free</td><td>aws.amazon.com/cloudwatch/pricing</td></tr>
+          <tr><td>Encryption key (KMS)</td><td>$1 per key-month</td><td>aws.amazon.com/kms/pricing</td></tr>
+          <tr><td>SMS / OTP (MSG91)</td><td>₹0.25 at 5,000, falling to ₹0.16 at volume</td><td>msg91.com/in/pricing/sms</td></tr>
+          <tr><td>Exchange rate</td><td>₹95.82 per $1 (editable)</td><td>Google live rate</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Estimates, not quotes. Standby-database storage is assumed to be billed twice (one copy per zone); check that line on the first bill. AI usage and SMS are passed through to the client at cost and shown separately.</p>
+    </section>
+  </main>
+
+  <aside class="panel summary" aria-labelledby="sum">
+    <h2 id="sum">Monthly cost</h2>
+    <div class="total"><div><div class="big" id="totalInr">₹0</div><div class="sub" id="totalUsd"></div></div><div class="sub" id="gstNote"></div></div>
+    <div id="platLines" style="margin-top:10px"></div>
+    <div id="appSums"></div>
+    <p class="note">Plans: Starter ₹1,999 (up to 2,000 users) · Growth ₹3,499 (up to 10,000) · Scale ₹8,999 (up to 50,000). Above 50,000 users, quote the app individually.</p>
+  </aside>
+</div>
+</div>
+
+<script>
+const H=730;
+const P={
+  rds:{micro:0.021,small:0.042,medium:0.084}, gp3:0.131,
+  apigw:1.05, lamReq:0.20, lamFreeReq:1e6, lamGbs:0.0000166667, lamGbsArm:0.0000133334, lamFreeGbs:400000,
+  cog1:0.0055, cog2:0.0046,
+  fgX:{v:0.04256,g:0.004655}, fgA:{v:0.02383,g:0.00261},
+  alb:0.0239, lcu:0.008, ipv4:0.005, nat:0.056, natGb:0.056,
+  s3:0.025, cdnFreeGb:1024, cdn:0.109, ses:0.10, logs:0.67, logsFree:5, kms:1
+};
+const PLANS=[{n:'Starter',max:2000,fee:1999},{n:'Growth',max:10000,fee:3499},{n:'Scale',max:50000,fee:8999}];
+const PRESETS={
+  small:{name:'New small app',users:2000,calls:300,durMs:200,memMb:512,armLambda:false,cognito:true,db:'shared',multiAz:false,dbGb:20,tasks:0,vcpu:0.5,memGb:1,armTask:true,alb:false,lcu:1,s3Gb:2,cdnGb:5,emails:2000,sms:0,smsRate:0.25,logsGb:0.5,aiInr:0,ownKey:true},
+  owndb:{name:'App with own database',users:10000,calls:300,durMs:200,memMb:512,armLambda:false,cognito:true,db:'micro',multiAz:false,dbGb:20,tasks:0,vcpu:0.5,memGb:1,armTask:true,alb:false,lcu:1,s3Gb:10,cdnGb:30,emails:10000,sms:0,smsRate:0.25,logsGb:1,aiInr:0,ownKey:true},
+  container:{name:'Always-on server app',users:5000,calls:600,durMs:0,memMb:512,armLambda:false,cognito:false,db:'micro',multiAz:false,dbGb:50,tasks:2,vcpu:0.5,memGb:1,armTask:true,alb:true,lcu:1,s3Gb:20,cdnGb:50,emails:5000,sms:0,smsRate:0.25,logsGb:3,aiInr:0,ownKey:true}
+};
+const DEFAULT={
+  usdInr:95.82, baseline:5, legacyCognito:false, gst:false, nat:false, natGb:10,
+  apps:[
+    Object.assign({},PRESETS.small,{name:'BackSignal',users:2000,s3Gb:1,cdnGb:5,emails:2000}),
+    Object.assign({},PRESETS.small,{name:'App 2 (example)',users:5000,sms:5000,emails:5000})
+  ]
+};
+let S;
+try{ S=JSON.parse(localStorage.getItem('noshtek-calc')||'null'); }catch(e){ S=null; }
+if(!S||!Array.isArray(S.apps)) S=JSON.parse(JSON.stringify(DEFAULT));
+function save(){ try{ localStorage.setItem('noshtek-calc',JSON.stringify(S)); }catch(e){} }
+
+const $=id=>document.getElementById(id);
+const fmtInr=v=>'₹'+Math.round(v).toLocaleString('en-IN');
+const fmtUsd=v=>'$'+(Math.round(v*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function field(i,key,label,type,attrs){
+  const a=S.apps[i]; attrs=attrs||'';
+  if(type==='check') return `<label class="c"><input type="checkbox" data-i="${i}" data-k="${key}" ${a[key]?'checked':''}> ${label}</label>`;
+  if(type==='select') return `<label class="f">${label}<select data-i="${i}" data-k="${key}">${attrs}</select></label>`;
+  return `<label class="f">${label}<input type="number" data-i="${i}" data-k="${key}" value="${a[key]}" ${attrs}></label>`;
+}
+function dbOptions(v){
+  return [['shared','Shared database server'],['micro','Own server: small (t4g.micro)'],['small','Own server: medium (t4g.small)'],['medium','Own server: large (t4g.medium)'],['none','No database']]
+    .map(([k,t])=>`<option value="${k}" ${v===k?'selected':''}>${t}</option>`).join('');
+}
+function renderApps(){
+  $('apps').innerHTML=S.apps.map((a,i)=>`
+  <article class="app" aria-label="${esc(a.name)}">
+    <div class="apphead">
+      <input class="name" data-i="${i}" data-k="name" value="${esc(a.name)}" aria-label="App name">
+      <button class="btn ghost" data-remove="${i}" type="button">Remove</button>
+    </div>
+    <div class="grid">
+      ${field(i,'users','Monthly active users','num','min="0" step="100"')}
+      ${field(i,'calls','API calls per user per month','num','min="0" step="50"')}
+      ${field(i,'sms','SMS / OTP per month','num','min="0" step="100"')}
+      ${field(i,'aiInr','AI usage (₹/month, at cost)','num','min="0" step="100"')}
+    </div>
+    <div class="group grid">
+      ${field(i,'db','Database','select',dbOptions(a.db))}
+      ${field(i,'dbGb','Own database storage (GB)','num','min="20" step="10"')}
+      ${field(i,'multiAz','Standby database (99.95% uptime)','check')}
+      ${field(i,'cognito','Uses AWS login (Cognito)','check')}
+    </div>
+    <details class="group" ${a.tasks>0?'open':''}>
+      <summary>Always-on servers (containers)</summary>
+      <div class="grid">
+        ${field(i,'tasks','Number of servers running','num','min="0" step="1"')}
+        ${field(i,'vcpu','vCPU per server','num','min="0.25" step="0.25"')}
+        ${field(i,'memGb','Memory per server (GB)','num','min="0.5" step="0.5"')}
+        ${field(i,'armTask','Arm processors (cheaper)','check')}
+        ${field(i,'alb','Own load balancer','check')}
+        ${field(i,'lcu','Load balancer capacity units','num','min="0" step="0.5"')}
+      </div>
+    </details>
+    <details class="group">
+      <summary>Files, delivery, email, logs and function settings</summary>
+      <div class="grid">
+        ${field(i,'s3Gb','Stored files (GB)','num','min="0" step="1"')}
+        ${field(i,'cdnGb','Data delivered to users (GB/month)','num','min="0" step="5"')}
+        ${field(i,'emails','Emails per month','num','min="0" step="500"')}
+        ${field(i,'logsGb','Logs per month (GB)','num','min="0" step="0.5"')}
+        ${field(i,'smsRate','SMS rate (₹ each)','num','min="0" step="0.01"')}
+        ${field(i,'durMs','Average function time (ms)','num','min="0" step="50"')}
+        ${field(i,'memMb','Function memory (MB)','num','min="128" step="128"')}
+        ${field(i,'armLambda','Arm functions (cheaper)','check')}
+        ${field(i,'ownKey','Own encryption key','check')}
+      </div>
+    </details>
+  </article>`).join('');
+}
+
+function calc(){
+  const fx=+S.usdInr||95.82, apps=S.apps;
+  const lines=apps.map(()=>({}));
+  const add=(i,k,v)=>{lines[i][k]=(lines[i][k]||0)+v;};
+  // Account-wide usage for free tiers
+  let totReq=0,totGbs=0,totMau=0,totCdn=0,totLogs=0;
+  apps.forEach(a=>{
+    const req=(+a.users||0)*(+a.calls||0);
+    const gbs=(+a.durMs>0)? req*(+a.durMs/1000)*((+a.memMb||0)/1024) : 0;
+    a._req=req; a._gbs=gbs;
+    totReq+= (+a.durMs>0)?req:0; totGbs+=gbs;
+    if(a.cognito) totMau+=(+a.users||0);
+    totCdn+=+a.cdnGb||0; totLogs+=+a.logsGb||0;
+  });
+  // Lambda (proportional allocation of account-level cost)
+  const lamReqCost=Math.max(0,totReq-P.lamFreeReq)/1e6*P.lamReq;
+  apps.forEach((a,i)=>{
+    const r=(+a.durMs>0)?a._req:0;
+    add(i,'API calls',a._req/1e6*P.apigw);
+    if(totReq>0&&r>0) add(i,'Functions',lamReqCost*r/totReq);
+    if(totGbs>0&&a._gbs>0){
+      const free=P.lamFreeGbs*a._gbs/totGbs;
+      const rate=a.armLambda?P.lamGbsArm:P.lamGbs;
+      add(i,'Functions',Math.max(0,a._gbs-free)*rate);
+    }
+  });
+  // Cognito
+  const free=S.legacyCognito?50000:10000;
+  const paid=Math.max(0,totMau-free);
+  const cogCost=Math.min(paid,Math.max(0,100000-free))*P.cog1+Math.max(0,totMau-Math.max(100000,free))*P.cog2;
+  apps.forEach((a,i)=>{ if(a.cognito&&totMau>0) add(i,'Login',cogCost*(+a.users||0)/totMau); });
+  // CDN, logs
+  const cdnCost=Math.max(0,totCdn-P.cdnFreeGb)*P.cdn, logCost=Math.max(0,totLogs-P.logsFree)*P.logs;
+  apps.forEach((a,i)=>{
+    if(totCdn>0&&a.cdnGb>0) add(i,'Delivery to users',cdnCost*a.cdnGb/totCdn);
+    if(totLogs>0&&a.logsGb>0) add(i,'Logs',logCost*a.logsGb/totLogs);
+    add(i,'File storage',(+a.s3Gb||0)*P.s3);
+    add(i,'Email',(+a.emails||0)/1000*P.ses);
+    if(a.ownKey) add(i,'Encryption key',P.kms);
+    // Own database
+    if(['micro','small','medium'].includes(a.db)){
+      const mult=a.multiAz?2:1;
+      add(i,'Own database',P.rds[a.db]*H*mult);
+      add(i,'Own database',Math.max(20,+a.dbGb||20)*P.gp3*mult);
+    }
+    // Containers
+    if(+a.tasks>0){
+      const r=a.armTask?P.fgA:P.fgX;
+      add(i,'Always-on servers',(+a.tasks)*((+a.vcpu||0)*r.v+(+a.memGb||0)*r.g)*H);
+    }
+    if(a.alb) add(i,'Load balancer',(P.alb+(+a.lcu||0)*P.lcu+2*P.ipv4)*H);
+  });
+  // Shared platform fixed
+  const sharedUsers=apps.filter(a=>a.db==='shared');
+  const sharedDb= sharedUsers.length? (P.rds.small*H + 50*P.gp3) : 0;
+  const platKey=P.kms, baseline=+S.baseline||0;
+  const natCost= (S.nat && apps.some(a=>+a.tasks>0)) ? (P.nat*H+(+S.natGb||0)*P.natGb) : 0;
+  const containerApps=apps.filter(a=>+a.tasks>0);
+  apps.forEach((a,i)=>{
+    if(a.db==='shared') add(i,'Share of database server',sharedDb/sharedUsers.length);
+    add(i,'Share of security & monitoring',(baseline+platKey)/apps.length);
+    if(natCost&&+a.tasks>0) add(i,'Share of NAT gateway',natCost/containerApps.length);
+  });
+  // Totals
+  const g=S.gst?1.18:1;
+  const res=apps.map((a,i)=>{
+    const usd=Object.values(lines[i]).reduce((x,y)=>x+y,0);
+    const pass=((+a.sms||0)*(+a.smsRate||0)+(+a.aiInr||0));
+    const plan=PLANS.find(p=>(+a.users||0)<=p.max);
+    return {a,lines:lines[i],usd,inr:usd*fx,pass,plan};
+  });
+  const totUsd=res.reduce((x,r)=>x+r.usd,0), totPass=res.reduce((x,r)=>x+r.pass,0);
+  return {res,totUsd,totInr:totUsd*fx,totPass,g,fx,sharedDb,baseline:baseline+platKey,natCost};
+}
+
+function renderSummary(){
+  const c=calc(), g=c.g;
+  $('totalInr').textContent=fmtInr(c.totInr*g);
+  $('totalUsd').textContent=`${fmtUsd(c.totUsd*g)} hosting · plus ${fmtInr(c.totPass*g)} SMS and AI at cost`;
+  $('gstNote').textContent=S.gst?'Including 18% GST':'Before GST';
+  $('platLines').innerHTML=
+    `<div class="rowline"><span>Shared database server</span><b>${fmtInr(c.sharedDb*c.fx*g)}</b></div>`+
+    `<div class="rowline"><span>Security &amp; monitoring baseline</span><b>${fmtInr(c.baseline*c.fx*g)}</b></div>`+
+    (c.natCost?`<div class="rowline"><span>NAT gateway</span><b>${fmtInr(c.natCost*c.fx*g)}</b></div>`:'')+
+    `<div class="rowline"><span>Apps on the platform</span><b>${c.res.length}</b></div>`;
+  $('appSums').innerHTML=c.res.map(r=>{
+    const cost=r.inr*g, fee=r.plan?r.plan.fee*g:null;
+    let tag,col,pct;
+    if(!r.plan){tag=`<span class="tag warn">Over 50,000 users — quote individually</span>`;col='var(--warn)';pct=100;}
+    else{
+      const m=fee-cost; pct=Math.min(100,cost/fee*100);
+      if(m<0){tag=`<span class="tag bad">${r.plan.n} fee doesn’t cover cost (${fmtInr(m)})</span>`;col='var(--bad)';pct=100;}
+      else if(m<fee*0.3){tag=`<span class="tag warn">${r.plan.n} ${fmtInr(fee)} · thin margin ${fmtInr(m)}</span>`;col='var(--warn)';}
+      else{tag=`<span class="tag good">${r.plan.n} ${fmtInr(fee)} · margin ${fmtInr(m)}</span>`;col='var(--good)';}
+    }
+    const rows=Object.entries(r.lines).filter(([,v])=>v>0.004).sort((x,y)=>y[1]-x[1])
+      .map(([k,v])=>`<tr><td>${k}</td><td>${fmtInr(v*c.fx*g)}</td></tr>`).join('');
+    return `<div class="appsum">
+      <div class="top"><span class="nm">${esc(r.a.name)}</span><span class="cost">${fmtInr(cost)}</span></div>
+      <div class="small">${(+r.a.users||0).toLocaleString('en-IN')} users · hosting per month${r.pass?` · plus ${fmtInr(r.pass*g)} SMS/AI at cost`:''}</div>
+      <div class="meter" aria-hidden="true"><span style="width:${pct}%;background:${col}"></span></div>
+      ${tag}
+      <details class="brk"><summary>See what makes up this cost</summary><table>${rows||'<tr><td>No paid usage</td><td>₹0</td></tr>'}</table></details>
+    </div>`;
+  }).join('')||'<p class="small">Add an app to see its cost.</p>';
+}
+
+function syncPlatform(){
+  $('usdInr').value=S.usdInr; $('baseline').value=S.baseline; $('natGb').value=S.natGb;
+  $('legacyCognito').checked=!!S.legacyCognito; $('gst').checked=!!S.gst; $('nat').checked=!!S.nat;
+}
+function all(){ renderApps(); syncPlatform(); renderSummary(); }
+
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.k!==undefined&&t.dataset.i!==undefined){
+    const a=S.apps[+t.dataset.i];
+    a[t.dataset.k]= t.type==='checkbox'? t.checked : (t.type==='number'? (t.value===''?0:+t.value) : t.value);
+    if(t.dataset.k==='name'){ const art=t.closest('.app'); if(art) art.setAttribute('aria-label',t.value); }
+  } else if(t.id){
+    if(['usdInr','baseline','natGb'].includes(t.id)) S[t.id]=+t.value||0;
+    if(['legacyCognito','gst','nat'].includes(t.id)) S[t.id]=t.checked;
+  }
+  save(); renderSummary();
+});
+document.addEventListener('change',e=>{ if(e.target.tagName==='SELECT'){ const t=e.target; S.apps[+t.dataset.i][t.dataset.k]=t.value; save(); renderSummary(); }});
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button'); if(!t) return;
+  if(t.dataset.preset){ S.apps.push(JSON.parse(JSON.stringify(PRESETS[t.dataset.preset]))); save(); all(); }
+  else if(t.dataset.remove!==undefined){ S.apps.splice(+t.dataset.remove,1); save(); all(); }
+  else if(t.id==='reset'){ S=JSON.parse(JSON.stringify(DEFAULT)); save(); all(); }
+});
+all();
+</script>
+</body>
+</html>
